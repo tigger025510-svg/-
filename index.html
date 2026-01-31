@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tab Menu + Teachable Machine</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f1f5f9;
+    }
+
+    .menu {
+        display: flex;
+        background: #0f172a;
+    }
+
+    .menu button {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        background: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .menu button.active {
+        background: #38bdf8;
+        color: black;
+        font-weight: bold;
+    }
+
+    .page {
+        display: none;
+        height: calc(100vh - 50px);
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .page.show {
+        display: flex;
+    }
+
+    .box {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    img {
+        max-width: 200px;
+        margin-top: 10px;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- MENU -->
+<div class="menu">
+    <button class="active" onclick="showPage('home', this)">Home</button>
+    <button onclick="showPage('check', this)">Check</button>
+    <button onclick="showPage('about', this)">About Us</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="page show">
+    <div class="box">
+        <h1>Home</h1>
+        <p>เว็บไซต์ตรวจสอบภาพด้วย AI</p>
+    </div>
+</div>
+
+<!-- CHECK (เชื่อมโมเดล) -->
+<div id="check" class="page">
+    <div class="box">
+        <h1>Check Image</h1>
+
+        <input type="file" id="imageUpload" accept="image/*">
+        <br>
+        <img id="preview">
+        <div id="result"></div>
+    </div>
+</div>
+
+<!-- ABOUT -->
+<div id="about" class="page">
+    <div class="box">
+        <h1>About Us</h1>
+        <p>จัดทำเพื่อการศึกษา</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script>
+    /* TAB MENU */
+    function showPage(id, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+        document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('show');
+        btn.classList.add('active');
+    }
+
+    /* TEACHABLE MACHINE */
+    const URL = "https://teachablemachine.withgoogle.com/models/xHPu87db45/";
+    let model;
+
+    async function loadModel() {
+        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+    }
+    loadModel();
+
+    document.getElementById("imageUpload").addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function () {
+            const img = document.getElementById("preview");
+            img.src = reader.result;
+
+            img.onload = async () => {
+                const prediction = await model.predict(img);
+                let output = "<h3>ผลการทำนาย</h3>";
+
+                prediction.forEach(p => {
+                    output += `${p.className} : ${(p.probability * 100).toFixed(2)}%<br>`;
+                });
+
+                document.getElementById("result").innerHTML = output;
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
+
+</body>
+</html>
